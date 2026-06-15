@@ -1483,7 +1483,8 @@ bool SCH_EDIT_FRAME::SaveProject( bool aSaveAs )
 
 
 bool SCH_EDIT_FRAME::importFile( const wxString& aFileName, int aFileType,
-                                 const std::map<std::string, UTF8>* aProperties )
+                                 const std::map<std::string, UTF8>* aProperties,
+                                 bool aSaveAfterImport )
 {
     wxFileName             filename( aFileName );
     wxFileName             newfilename;
@@ -1516,6 +1517,8 @@ bool SCH_EDIT_FRAME::importFile( const wxString& aFileName, int aFileType,
         // Unless we are passing the files in aproperties, in which case aFileName can be empty.
         wxCHECK_MSG( aFileName.IsEmpty() || filename.IsAbsolute(), false,
                      wxS( "Import schematic: path is not absolute!" ) );
+
+        bool importSucceeded = false;
 
         try
         {
@@ -1587,6 +1590,8 @@ bool SCH_EDIT_FRAME::importFile( const wxString& aFileName, int aFileType,
 
                 // Only perform the dangling end test on root sheet.
                 GetScreen()->TestDanglingEnds();
+
+                importSucceeded = true;
             }
             else
             {
@@ -1660,6 +1665,19 @@ bool SCH_EDIT_FRAME::importFile( const wxString& aFileName, int aFileType,
 
         if( KISTATUSBAR* statusBar = dynamic_cast<KISTATUSBAR*>( GetStatusBar() ) )
             statusBar->AddWarningMessages( "load", loadReporter.GetMessages() );
+
+        // For the project-manager import, persist the imported schematic to disk
+        // immediately.  Until it is saved the schematic only exists in memory: the
+        // project tree shows no .kicad_sch file, navigating to it reports "Schematic
+        // does not exist", and that navigation discards the in-memory import.  Saving
+        // here mirrors the save-changes prompt that would otherwise only fire when the
+        // project is closed.  The File->Import menu leaves aSaveAfterImport false so an
+        // import into an existing project is not auto-written (which could overwrite an
+        // existing file).  Skip when there is no real project (standalone null project)
+        // to avoid a spurious Save As dialog; SaveProject() handles the just-imported,
+        // file-not-yet-on-disk case.
+        if( importSucceeded && aSaveAfterImport && !Prj().IsNullProject() )
+            SaveProject();
 
         break;
     }

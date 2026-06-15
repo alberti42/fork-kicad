@@ -1017,9 +1017,15 @@ private:
      *
      *  @param full filepath of file to be imported.
      *  @param aFileType SCH_FILE_T value for file type
+     *  @param aProperties optional importer properties.
+     *  @param aSaveAfterImport when true, write the imported schematic to disk immediately
+     *                          (used by the project-manager import so the .kicad_sch file
+     *                          exists right away).  The File->Import menu leaves this false
+     *                          so an import into an existing project is not auto-written.
      */
     bool importFile( const wxString& aFileName, int aFileType,
-                     const std::map<std::string, UTF8>* aProperties = nullptr );
+                     const std::map<std::string, UTF8>* aProperties = nullptr,
+                     bool aSaveAfterImport = false );
 
     /**
      * Save \a aSheet to a schematic file.

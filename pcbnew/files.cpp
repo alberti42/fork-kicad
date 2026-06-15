@@ -1255,6 +1255,8 @@ bool PCB_EDIT_FRAME::importFile( const wxString& aFileName, int aFileType,
 
     m_importProperties = aProperties;
 
+    bool imported = false;
+
     switch( (PCB_IO_MGR::PCB_FILE_T) aFileType )
     {
     case PCB_IO_MGR::CADSTAR_PCB_ARCHIVE:
@@ -1262,18 +1264,32 @@ bool PCB_EDIT_FRAME::importFile( const wxString& aFileName, int aFileType,
     case PCB_IO_MGR::EASYEDA:
     case PCB_IO_MGR::EASYEDAPRO:
     case PCB_IO_MGR::GEDA_PCB:
-        return OpenProjectFiles( std::vector<wxString>( 1, aFileName ), KICTL_NONKICAD_ONLY | KICTL_IMPORT_LIB );
+        imported = OpenProjectFiles( std::vector<wxString>( 1, aFileName ),
+                                     KICTL_NONKICAD_ONLY | KICTL_IMPORT_LIB );
+        break;
 
     case PCB_IO_MGR::ALTIUM_DESIGNER:
     case PCB_IO_MGR::ALTIUM_CIRCUIT_MAKER:
     case PCB_IO_MGR::ALTIUM_CIRCUIT_STUDIO:
     case PCB_IO_MGR::SOLIDWORKS_PCB:
     case PCB_IO_MGR::PADS:
-        return OpenProjectFiles( std::vector<wxString>( 1, aFileName ), KICTL_NONKICAD_ONLY );
+        imported = OpenProjectFiles( std::vector<wxString>( 1, aFileName ), KICTL_NONKICAD_ONLY );
+        break;
 
     default:
         return false;
     }
+
+    // Persist the imported board to disk immediately.  Until it is saved the board only
+    // exists in memory: the project tree shows no .kicad_pcb file, and the import is only
+    // kept if the user answers the save-changes prompt when closing.  This mirrors the
+    // schematic import (SCH_EDIT_FRAME::importFile) so a project import leaves both
+    // documents on disk.  Skip when there is no real project (standalone null project) to
+    // avoid a spurious Save As dialog; SavePcbFile() is non-interactive otherwise.
+    if( imported && !Prj().IsNullProject() )
+        SavePcbFile( GetBoard()->GetFileName() );
+
+    return imported;
 }
 
 

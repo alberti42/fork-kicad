@@ -1129,7 +1129,8 @@ void SCH_EDIT_FRAME::KiwayMailIn( KIWAY_MAIL_EVENT& mail )
         } while( true );
 
         if( importFormat >= 0 )
-            importFile( fnameStr, importFormat, props.empty() ? nullptr : &props );
+            importFile( fnameStr, importFormat, props.empty() ? nullptr : &props,
+                        /* aSaveAfterImport */ true );
 
         break;
     }
